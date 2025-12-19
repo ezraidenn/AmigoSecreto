@@ -4,7 +4,16 @@ import { customAlphabet } from "nanoid";
 const INVITE_CODE_LENGTH = parseInt(process.env.INVITE_CODE_LENGTH || "8", 10);
 const generateInviteCode = customAlphabet("ABCDEFGHJKLMNPQRSTUVWXYZ23456789", INVITE_CODE_LENGTH);
 
-export async function createGroup(ownerId: string, name: string) {
+interface CreateGroupData {
+  name: string;
+  description?: string | null;
+  location?: string | null;
+  budgetMin?: number | null;
+  budgetMax?: number | null;
+  eventDate?: Date | null;
+}
+
+export async function createGroup(ownerId: string, data: CreateGroupData) {
   let inviteCode: string;
   let attempts = 0;
   
@@ -21,7 +30,12 @@ export async function createGroup(ownerId: string, name: string) {
 
   const group = await prisma.group.create({
     data: {
-      name,
+      name: data.name,
+      description: data.description,
+      location: data.location,
+      budgetMin: data.budgetMin,
+      budgetMax: data.budgetMax,
+      eventDate: data.eventDate,
       inviteCode,
       ownerId,
       members: {
@@ -89,6 +103,11 @@ export async function listUserGroups(userId: string) {
   return memberships.map((m) => ({
     id: m.group.id,
     name: m.group.name,
+    description: m.group.description,
+    location: m.group.location,
+    budgetMin: m.group.budgetMin,
+    budgetMax: m.group.budgetMax,
+    eventDate: m.group.eventDate,
     inviteCode: m.group.inviteCode,
     role: m.role,
     isDrawStarted: m.group.isDrawStarted,
@@ -132,6 +151,11 @@ export async function getGroupOverview(userId: string, groupId: string) {
   return {
     id: group.id,
     name: group.name,
+    description: group.description,
+    location: group.location,
+    budgetMin: group.budgetMin,
+    budgetMax: group.budgetMax,
+    eventDate: group.eventDate,
     inviteCode: group.inviteCode,
     isDrawStarted: group.isDrawStarted,
     drawStartedAt: group.drawStartedAt,

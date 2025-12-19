@@ -16,6 +16,11 @@ export async function createGroupAction(formData: FormData): Promise<ActionResul
   
   const rawData = {
     name: formData.get("name") as string,
+    description: formData.get("description") as string,
+    location: formData.get("location") as string,
+    budgetMin: formData.get("budgetMin") as string,
+    budgetMax: formData.get("budgetMax") as string,
+    eventDate: formData.get("eventDate") as string,
   };
 
   const parsed = createGroupSchema.safeParse(rawData);
@@ -25,7 +30,7 @@ export async function createGroupAction(formData: FormData): Promise<ActionResul
   }
 
   try {
-    const group = await createGroup(user.id, parsed.data.name);
+    const group = await createGroup(user.id, parsed.data);
     revalidatePath("/app/dashboard");
     return { success: true, groupId: group.id };
   } catch (e) {

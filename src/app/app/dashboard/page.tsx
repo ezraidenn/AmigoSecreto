@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Plus, Key, ArrowRight, Gift, Sparkles, CheckCircle2 } from "lucide-react";
+import { Users, Plus, Key, ArrowRight, Gift, Sparkles, CheckCircle2, MapPin, Calendar, DollarSign } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { listUserGroups } from "@/lib/groups/service";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -58,36 +58,70 @@ export default async function DashboardPage() {
                     {groups.map((group) => (
                       <MotionItem key={group.id}>
                         <Link href={`/app/group/${group.id}`}>
-                          <div className="flex items-center justify-between p-4 rounded-xl border bg-gradient-to-r from-card to-card/50 hover:from-accent/50 hover:to-accent/30 transition-all shadow-sm hover:shadow-md group">
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
-                                <span className="font-medium truncate">{group.name}</span>
-                                <Badge variant={group.role === "OWNER" ? "default" : "secondary"} className="text-xs">
-                                  {group.role === "OWNER" ? "Dueño" : "Miembro"}
-                                </Badge>
+                          <div className="p-4 rounded-xl border bg-gradient-to-r from-card to-card/50 hover:from-accent/50 hover:to-accent/30 transition-all shadow-sm hover:shadow-md group">
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="font-medium truncate">{group.name}</span>
+                                  <Badge variant={group.role === "OWNER" ? "default" : "secondary"} className="text-xs">
+                                    {group.role === "OWNER" ? "Dueño" : "Miembro"}
+                                  </Badge>
+                                </div>
+                                <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                                  <span className="flex items-center gap-1">
+                                    <Users className="h-3 w-3" />
+                                    {group.memberCount}
+                                  </span>
+                                  <span>•</span>
+                                  <span className="flex items-center gap-1">
+                                    {group.isDrawStarted ? (
+                                      <>
+                                        <CheckCircle2 className="h-3 w-3 text-green-500" />
+                                        <span className="text-green-600">Sorteado</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Sparkles className="h-3 w-3" />
+                                        Pendiente
+                                      </>
+                                    )}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                                <span className="flex items-center gap-1">
-                                  <Users className="h-3 w-3" />
-                                  {group.memberCount}
-                                </span>
-                                <span>•</span>
-                                <span className="flex items-center gap-1">
-                                  {group.isDrawStarted ? (
-                                    <>
-                                      <CheckCircle2 className="h-3 w-3 text-green-500" />
-                                      <span className="text-green-600">Sorteado</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <Sparkles className="h-3 w-3" />
-                                      Pendiente
-                                    </>
-                                  )}
-                                </span>
-                              </div>
+                              <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
                             </div>
-                            <ArrowRight className="h-5 w-5 text-muted-foreground flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+                            
+                            {(group.location || group.eventDate || group.budgetMin || group.budgetMax) && (
+                              <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-border/50">
+                                {group.eventDate && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-blue-500/10 text-blue-600 text-xs font-medium">
+                                    <Calendar className="h-3 w-3" />
+                                    {new Date(group.eventDate).toLocaleDateString("es-MX", {
+                                      day: "numeric",
+                                      month: "short",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    })}
+                                  </span>
+                                )}
+                                {group.location && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-purple-500/10 text-purple-600 text-xs font-medium">
+                                    <MapPin className="h-3 w-3" />
+                                    {group.location}
+                                  </span>
+                                )}
+                                {(group.budgetMin || group.budgetMax) && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-500/10 text-emerald-600 text-xs font-medium">
+                                    <DollarSign className="h-3 w-3" />
+                                    {group.budgetMin && group.budgetMax
+                                      ? `$${group.budgetMin} - $${group.budgetMax}`
+                                      : group.budgetMin
+                                      ? `Mín $${group.budgetMin}`
+                                      : `Máx $${group.budgetMax}`}
+                                  </span>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </Link>
                       </MotionItem>

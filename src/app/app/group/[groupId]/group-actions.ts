@@ -4,20 +4,32 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireUser } from "@/lib/auth/session";
+import { updateGroupSchema } from "@/lib/validations/group";
 
 type ActionResult = {
   success: boolean;
   error?: string;
 };
 
-export async function updateGroupNameAction(
+export async function updateGroupAction(
   groupId: string,
-  name: string
+  formData: FormData
 ): Promise<ActionResult> {
   const user = await requireUser();
 
-  if (!name || name.trim().length < 2) {
-    return { success: false, error: "El nombre debe tener al menos 2 caracteres" };
+  const rawData = {
+    name: formData.get("name") as string,
+    description: formData.get("description") as string,
+    location: formData.get("location") as string,
+    budgetMin: formData.get("budgetMin") as string,
+    budgetMax: formData.get("budgetMax") as string,
+    eventDate: formData.get("eventDate") as string,
+  };
+
+  const parsed = updateGroupSchema.safeParse(rawData);
+
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.errors[0]?.message || "Datos inválidos" };
   }
 
   const membership = await prisma.groupMember.findUnique({
@@ -38,13 +50,16 @@ export async function updateGroupNameAction(
     return { success: false, error: "Grupo no encontrado" };
   }
 
-  if (group.isDrawStarted) {
-    return { success: false, error: "No puedes editar un grupo con sorteo iniciado" };
-  }
-
   await prisma.group.update({
     where: { id: groupId },
-    data: { name: name.trim() },
+    data: {
+      name: parsed.data.name,
+      description: parsed.data.description,
+      location: parsed.data.location,
+      budgetMin: parsed.data.budgetMin,
+      budgetMax: parsed.data.budgetMax,
+      eventDate: parsed.data.eventDate,
+    },
   });
 
   revalidatePath(`/app/group/${groupId}`);

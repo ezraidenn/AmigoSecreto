@@ -39,6 +39,11 @@ model Session {
 model Group {
   id            String    @id @default(cuid())
   name          String
+  description   String?
+  location      String?
+  budgetMin     Int?
+  budgetMax     Int?
+  eventDate     DateTime?
   inviteCode    String    @unique
   ownerId       String
   isDrawStarted Boolean   @default(false)

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { 
   Settings, 
@@ -33,7 +34,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
-  updateGroupNameAction,
+  updateGroupAction,
   deleteGroupAction,
   regenerateInviteCodeAction,
   leaveGroupAction,
@@ -42,23 +43,39 @@ import {
 interface GroupSettingsProps {
   groupId: string;
   groupName: string;
+  groupDescription?: string | null;
+  groupLocation?: string | null;
+  groupBudgetMin?: number | null;
+  groupBudgetMax?: number | null;
+  groupEventDate?: Date | null;
   isOwner: boolean;
   isDrawStarted: boolean;
 }
 
-export function GroupSettings({ groupId, groupName, isOwner, isDrawStarted }: GroupSettingsProps) {
+export function GroupSettings({ 
+  groupId, 
+  groupName, 
+  groupDescription,
+  groupLocation,
+  groupBudgetMin,
+  groupBudgetMax,
+  groupEventDate,
+  isOwner, 
+  isDrawStarted 
+}: GroupSettingsProps) {
+  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [newName, setNewName] = useState(groupName);
 
-  async function handleUpdateName() {
+  async function handleUpdate(formData: FormData) {
     setLoading(true);
-    const result = await updateGroupNameAction(groupId, newName);
+    const result = await updateGroupAction(groupId, formData);
     if (result.success) {
-      toast.success("Nombre actualizado");
+      toast.success("Grupo actualizado");
       setEditOpen(false);
+      router.refresh();
     } else {
       toast.error(result.error || "Error al actualizar");
     }
@@ -96,6 +113,12 @@ export function GroupSettings({ groupId, groupName, isOwner, isDrawStarted }: Gr
     setLoading(false);
   }
 
+  const formatDateForInput = (date: Date | null | undefined) => {
+    if (!date) return "";
+    const d = new Date(date);
+    return d.toISOString().slice(0, 16);
+  };
+
   return (
     <>
       <DropdownMenu>
@@ -108,16 +131,18 @@ export function GroupSettings({ groupId, groupName, isOwner, isDrawStarted }: Gr
           <DropdownMenuLabel>Opciones del grupo</DropdownMenuLabel>
           <DropdownMenuSeparator />
           
-          {isOwner && !isDrawStarted && (
+          {isOwner && (
             <>
               <DropdownMenuItem onClick={() => setEditOpen(true)}>
                 <Pencil className="h-4 w-4 mr-2" />
-                Editar nombre
+                Editar grupo
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleRegenerateCode} disabled={loading}>
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Regenerar código
-              </DropdownMenuItem>
+              {!isDrawStarted && (
+                <DropdownMenuItem onClick={handleRegenerateCode} disabled={loading}>
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Regenerar código
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
             </>
           )}
@@ -142,36 +167,88 @@ export function GroupSettings({ groupId, groupName, isOwner, isDrawStarted }: Gr
         </DropdownMenuContent>
       </DropdownMenu>
 
-      {/* Edit Name Dialog */}
+      {/* Edit Group Dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Editar nombre del grupo</DialogTitle>
+            <DialogTitle>Editar grupo</DialogTitle>
             <DialogDescription>
-              Cambia el nombre de tu grupo
+              Actualiza la información del intercambio
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <form action={handleUpdate} className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="name">Nombre</Label>
+              <Label htmlFor="edit-name">Nombre *</Label>
               <Input
-                id="name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
+                id="edit-name"
+                name="name"
+                defaultValue={groupName}
                 placeholder="Nombre del grupo"
                 disabled={loading}
               />
             </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)} disabled={loading}>
-              Cancelar
-            </Button>
-            <Button onClick={handleUpdateName} disabled={loading || !newName.trim()}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Guardar
-            </Button>
-          </DialogFooter>
+            <div className="space-y-2">
+              <Label htmlFor="edit-description">Descripción</Label>
+              <Input
+                id="edit-description"
+                name="description"
+                defaultValue={groupDescription || ""}
+                placeholder="Ej: Intercambio navideño 2024"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-location">Lugar del intercambio</Label>
+              <Input
+                id="edit-location"
+                name="location"
+                defaultValue={groupLocation || ""}
+                placeholder="Ej: Casa de la abuela"
+                disabled={loading}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Presupuesto</Label>
+              <div className="flex gap-2 items-center">
+                <Input
+                  name="budgetMin"
+                  type="number"
+                  defaultValue={groupBudgetMin || ""}
+                  placeholder="Mín"
+                  disabled={loading}
+                  className="w-24"
+                />
+                <span className="text-muted-foreground">a</span>
+                <Input
+                  name="budgetMax"
+                  type="number"
+                  defaultValue={groupBudgetMax || ""}
+                  placeholder="Máx"
+                  disabled={loading}
+                  className="w-24"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-eventDate">Fecha y hora</Label>
+              <Input
+                id="edit-eventDate"
+                name="eventDate"
+                type="datetime-local"
+                defaultValue={formatDateForInput(groupEventDate)}
+                disabled={loading}
+              />
+            </div>
+            <DialogFooter className="pt-4">
+              <Button type="button" variant="outline" onClick={() => setEditOpen(false)} disabled={loading}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={loading}>
+                {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar
+              </Button>
+            </DialogFooter>
+          </form>
         </DialogContent>
       </Dialog>
 

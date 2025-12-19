@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowLeft, Copy, Users, Gift, Crown, Sparkles } from "lucide-react";
+import { ArrowLeft, Copy, Users, Gift, Crown, Sparkles, MapPin, Calendar, DollarSign } from "lucide-react";
 import { requireUser } from "@/lib/auth/session";
 import { getGroupOverview } from "@/lib/groups/service";
 import { getMyAssignment } from "@/lib/draw/queries";
@@ -63,12 +63,59 @@ export default async function GroupPage({ params }: PageProps) {
             <GroupSettings 
               groupId={groupId}
               groupName={groupData.name}
+              groupDescription={groupData.description}
+              groupLocation={groupData.location}
+              groupBudgetMin={groupData.budgetMin}
+              groupBudgetMax={groupData.budgetMax}
+              groupEventDate={groupData.eventDate}
               isOwner={isOwner}
               isDrawStarted={groupData.isDrawStarted}
             />
           </div>
 
-          <h1 className="text-2xl md:text-3xl font-bold mb-6">{groupData.name}</h1>
+          <div className="mb-6">
+            <h1 className="text-2xl md:text-3xl font-bold">{groupData.name}</h1>
+            {groupData.description && (
+              <p className="text-muted-foreground mt-1">{groupData.description}</p>
+            )}
+            
+            {(groupData.location || groupData.eventDate || groupData.budgetMin || groupData.budgetMax) && (
+              <div className="flex flex-wrap gap-3 mt-4">
+                {groupData.eventDate && (
+                  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                    <Calendar className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm font-medium text-blue-600">
+                      {new Date(groupData.eventDate).toLocaleDateString("es-MX", {
+                        weekday: "short",
+                        day: "numeric",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                )}
+                {groupData.location && (
+                  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-purple-500/10 border border-purple-500/20">
+                    <MapPin className="h-4 w-4 text-purple-500" />
+                    <span className="text-sm font-medium text-purple-600">{groupData.location}</span>
+                  </div>
+                )}
+                {(groupData.budgetMin || groupData.budgetMax) && (
+                  <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
+                    <DollarSign className="h-4 w-4 text-emerald-500" />
+                    <span className="text-sm font-medium text-emerald-600">
+                      {groupData.budgetMin && groupData.budgetMax
+                        ? `$${groupData.budgetMin} - $${groupData.budgetMax}`
+                        : groupData.budgetMin
+                        ? `Mín $${groupData.budgetMin}`
+                        : `Máx $${groupData.budgetMax}`}
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </Motion>
 
         <div className="grid gap-6 md:grid-cols-2">
