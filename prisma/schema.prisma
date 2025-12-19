@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  email        String   @unique
+  name         String   @default("")
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions        Session[]
+  ownedGroups     Group[]         @relation("GroupOwner")
+  memberships     GroupMember[]
+  giverAssignments Assignment[]   @relation("Giver")
+  receiverAssignments Assignment[] @relation("Receiver")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([tokenHash])
+  @@index([userId])
+}
+
+model Group {
+  id            String    @id @default(cuid())
+  name          String
+  inviteCode    String    @unique
+  ownerId       String
+  isDrawStarted Boolean   @default(false)
+  drawStartedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  owner       User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members     GroupMember[]
+  assignments Assignment[]
+
+  @@index([inviteCode])
+  @@index([ownerId])
+}
+
+enum MemberRole {
+  OWNER
+  MEMBER
+}
+
+model GroupMember {
+  id        String     @id @default(cuid())
+  groupId   String
+  userId    String
+  role      MemberRole
+  createdAt DateTime   @default(now())
+
+  group Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId])
+  @@index([userId])
+}
+
+model Assignment {
+  id             String   @id @default(cuid())
+  groupId        String
+  giverUserId    String
+  receiverUserId String
+  createdAt      DateTime @default(now())
+
+  group    Group @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  giver    User  @relation("Giver", fields: [giverUserId], references: [id])
+  receiver User  @relation("Receiver", fields: [receiverUserId], references: [id])
+
+  @@unique([groupId, giverUserId])
+  @@unique([groupId, receiverUserId])
+  @@index([groupId])
+}
